@@ -84,15 +84,3 @@ Also isolated (all still crash / all irrelevant):
   `ai.prompt(...).stream(input, { ... })` with the *same* output schema work
   perfectly. Only the Agent path fails.
 
-## Likely root cause
-The JSON output format (`@genkit-ai/ai/src/formats/json.ts`) returns a format
-object holding functions (`parseMessage = (message) => extractJson(message.text)`,
-`parseChunk`). The Agent turn machinery `structuredClone`s session state that
-transitively references that format object (e.g. state diffing around
-`agent.ts:1201/1214`, `session.ts:164/174/184`), and `structuredClone` cannot
-clone a function → `DataCloneError`.
-
-## Workaround
-Don't set a native `output` schema on an agent's prompt. Instruct the model to
-emit JSON in the prompt text and parse it yourself from `response.text`. That
-avoids attaching the format functions and works with agents + sessions.

@@ -39,12 +39,14 @@ const echo = ai.defineModel({ name: 'echo' }, async () => ({
 // Use the real Gemini model, or fall back to the fake offline one.
 const model = USE_REAL_MODEL ? googleAI.model(MODEL_NAME) : echo;
 
+const OutputSchema = z.object({ answer: z.string() });
+
 // A prompt that requests structured output.
 ai.definePrompt(
   {
     name: 'echoPrompt',
     model,
-    output: { schema: z.object({ answer: z.string() }) }, // <-- remove this line and it works
+    output: { schema: OutputSchema }, // <-- remove this line and it works
   },
   'You are a test assistant.',
 );
@@ -57,4 +59,13 @@ const agent = ai.definePromptAgent({
 
 const chat = agent.chat({ sessionId: 'repro-1' });
 const res = await chat.send('hi'); // throws: "... could not be cloned"
-console.log('output:', res.output);
+const output = OutputSchema.nullable().parse(res.data);
+console.log('Structured output:', output?.answer);
+console.log('Raw output:', res.text);
+
+// Working non-agent Alternative: 
+// Comment out the definePromptAgent block above and use this instead. It
+// const echoPrompt = ai.prompt('echoPrompt');
+// const res = await echoPrompt();
+// console.log('Structured output:', res.output?.answer);
+// console.log('Raw output:', res.text);

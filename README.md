@@ -1,4 +1,6 @@
-# genkit 1.39.0 — `definePromptAgent` + `output` schema → `DataCloneError: ... could not be cloned`
+**Describe the bug**
+
+Genkit 1.39.0 agent API (`definePromptAgent()`) returns the following error when output schema is provided.
 
 A prompt agent whose prompt declares a structured `output` schema throws on the
 very first `send()`:
@@ -12,7 +14,34 @@ AgentError: (message) => {
   at @genkit-ai/ai/src/agent-core.ts:754
 ```
 
-## Environment
+**To Reproduce**
+
+Clone, npm install, and run the [example repo here](https://github.com/jmcooper/genkit-agent-api-error-repro) which does the following:
+
+```ts
+ai.definePrompt(
+  {
+    name: 'echoPrompt',
+    model,
+    output: { schema: z.object({ answer: z.string() }) }, // <-- remove this line and the error goes away
+  },
+  'You are a test assistant.',
+);
+
+// A prompt agent backed by a session store.
+const agent = ai.definePromptAgent({
+  promptName: 'echoPrompt',
+  store: new InMemorySessionStore(),
+});
+```
+
+**Expected behavior**
+
+It should support specifying an output schema when using the agent API and return a response matching the schema.
+
+**Desktop (please complete the following information):**
+- OS: Windows
+- Bash Terminal
 - `genkit` **1.39.0** (JS), `genkit/beta`
 - Node.js 24.x
 - Models tested:
@@ -20,51 +49,20 @@ AgentError: (message) => {
   - gemini-3.1-flash-lite
   - gemini-3-flash-preview
 
-## How to Reproduce
+## To run the sample repo
 
-### Fake inline model:
+### Using a fake inline model:
 ```bash
 npm install
 npm run repro
 ```
 
-### Real model:
+### Using a real model:
 To use a real model set the following values in the `.env` (see `.env.sample`) before running the project as described above: 
 - Set `USE_REAL_MODEL=true`
 - Set `GEMINI_API_KEY`
 - Set `GEMINI_MODEL_NAME` (i.e. `GEMINI_MODEL_NAME='gemini-3.5-flash'`)
 
-`repro.ts` (~30 lines, only depends on `genkit`):
-```ts
-
-import { genkit, z, InMemorySessionStore } from 'genkit/beta';
-
-const ai = genkit({});
-
-// Fake offline model that returns a fixed JSON string.
-const echo = ai.defineModel({ name: 'echo' }, async () => ({
-  finishReason: 'stop',
-  message: { role: 'model', content: [{ text: '{"answer":"hello"}' }] },
-}));
-
-ai.definePrompt(
-  {
-    name: 'echoPrompt',
-    model: echo,
-    output: { schema: z.object({ answer: z.string() }) }, // <-- remove this line and it works
-  },
-  'You are a test assistant.',
-);
-
-const agent = ai.definePromptAgent({
-  promptName: 'echoPrompt',
-  store: new InMemorySessionStore(),
-});
-
-const chat = agent.chat({ sessionId: 'repro-1' });
-const res = await chat.send('hi'); // throws: "... could not be cloned"
-console.log('output:', res.output);
-```
 
 ## Expected
 `chat.send()` resolves and `res.output` is `{ answer: 'hello' }`.

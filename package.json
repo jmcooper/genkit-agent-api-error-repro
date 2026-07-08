@@ -1,0 +1,18 @@
+{
+  "name": "genkit-agent-output-clone-repro",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "repro": "tsx repro.ts"
+  },
+  "dependencies": {
+    "@genkit-ai/google-genai": "^1.39.0",
+    "dotenv": "^17.4.2",
+    "genkit": "1.39.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.0"
+  }
+}
